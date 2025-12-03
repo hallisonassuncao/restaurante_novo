@@ -52,7 +52,7 @@ export default function PratoForm({ dao, initialValues, onSaved }) {
 
   return (
     <Form form={form} layout="vertical" initialValues={initialValues} onFinish={onFinish}>
-      <Form.Item name="nome" label="Nome" rules={[{ required: true }]}>
+      <Form.Item name="nome" label="Nome do Prato" rules={[{ required: true }]}>
         <Input placeholder="Ex: Lasanha" />
       </Form.Item>
 
