@@ -1,16 +1,20 @@
-import { Form, Input, InputNumber, Select, Button, message, Row, Col } from 'antd';
+import { Form, Input, InputNumber, Select, Button, message, Row, Col, Tag } from 'antd';
 import { useState, useEffect } from 'react';
 
 export default function PratoForm({ dao, initialValues, onSaved }) {
   const [loading, setLoading] = useState(false);
   const [form] = Form.useForm();
 
-  // Atualiza o formulário quando os valores iniciais mudam
+  // Estado auxiliar só para exibir/remover ingredientes visualmente
+  const [ingredientesVisiveis, setIngredientesVisiveis] = useState([]);
+
   useEffect(() => {
     if (initialValues) {
       form.setFieldsValue(initialValues);
+      setIngredientesVisiveis(initialValues.ingredientes || []);
     } else {
       form.resetFields();
+      setIngredientesVisiveis([]);
     }
   }, [initialValues, form]);
 
@@ -33,6 +37,7 @@ export default function PratoForm({ dao, initialValues, onSaved }) {
 
       if (!initialValues?.id) {
         form.resetFields();
+        setIngredientesVisiveis([]);
       }
     } catch {
       message.error('Erro ao salvar prato');
@@ -41,13 +46,17 @@ export default function PratoForm({ dao, initialValues, onSaved }) {
     }
   };
 
+  // Remove apenas da visualização, não do cadastro principal
+  const removerVisual = (ingrediente) => {
+    setIngredientesVisiveis((prev) => prev.filter((i) => i !== ingrediente));
+  };
+
   return (
     <Form form={form} layout="vertical" initialValues={initialValues} onFinish={onFinish}>
       <Form.Item name="nome" label="Nome do Prato" rules={[{ required: true }]}>
         <Input placeholder="Ex: Lasanha" />
       </Form.Item>
 
-      {/* Grid Responsivo para Preço e Categoria */}
       <Row gutter={16}>
         <Col xs={24} md={12}>
           <Form.Item name="preco" label="Preço" rules={[{ required: true }]}>
@@ -73,44 +82,58 @@ export default function PratoForm({ dao, initialValues, onSaved }) {
           tokenSeparators={[',']}
           placeholder="Digite ou selecione os ingredientes"
           options={[
-            { "value": "Arroz", "label": "Arroz" },
-            { "value": "Feijão", "label": "Feijão" },
-            { "value": "Batata", "label": "Batata" },
-            { "value": "Carne bovina", "label": "Carne bovina" },
-            { "value": "Frango", "label": "Frango" },
-            { "value": "Peixe", "label": "Peixe" },
-            { "value": "Porco", "label": "Porco" },
-            { "value": "Ovos", "label": "Ovos" },
-            { "value": "Queijo", "label": "Queijo" },
-            { "value": "Presunto", "label": "Presunto" },
-            { "value": "Tomate", "label": "Tomate" },
-            { "value": "Cebola", "label": "Cebola" },
-            { "value": "Alho", "label": "Alho" },
-            { "value": "Pimentão", "label": "Pimentão" },
-            { "value": "Cenoura", "label": "Cenoura" },
-            { "value": "Ervilha", "label": "Ervilha" },
-            { "value": "Milho", "label": "Milho" },
-            { "value": "Alface", "label": "Alface" },
-            { "value": "Rúcula", "label": "Rúcula" },
-            { "value": "Espinafre", "label": "Espinafre" },
-            { "value": "Molho de tomate", "label": "Molho de tomate" },
-            { "value": "Molho branco", "label": "Molho branco" },
-            { "value": "Azeite", "label": "Azeite" },
-            { "value": "Manteiga", "label": "Manteiga" },
-            { "value": "Farinha", "label": "Farinha" },
-            { "value": "Macarrão", "label": "Macarrão" },
-            { "value": "Massa de pizza", "label": "Massa de pizza" },
-            { "value": "Chocolate", "label": "Chocolate" },
-            { "value": "Açúcar", "label": "Açúcar" },
-            { "value": "Sal", "label": "Sal" },
-            { "value": "Pimenta", "label": "Pimenta" },
-            { "value": "Orégano", "label": "Orégano" },
-            { "value": "Manjericão", "label": "Manjericão" },
-            { "value": "Salsa", "label": "Salsa" },
-            { "value": "Coentro", "label": "Coentro" }
+            { value: 'Arroz', label: 'Arroz' },
+            { value: 'Feijão', label: 'Feijão' },
+            { value: 'Batata', label: 'Batata' },
+            { value: 'Carne bovina', label: 'Carne bovina' },
+            { value: 'Frango', label: 'Frango' },
+            { value: 'Peixe', label: 'Peixe' },
+            { value: 'Porco', label: 'Porco' },
+            { value: 'Ovos', label: 'Ovos' },
+            { value: 'Queijo', label: 'Queijo' },
+            { value: 'Presunto', label: 'Presunto' },
+            { value: 'Tomate', label: 'Tomate' },
+            { value: 'Cebola', label: 'Cebola' },
+            { value: 'Alho', label: 'Alho' },
+            { value: 'Pimentão', label: 'Pimentão' },
+            { value: 'Cenoura', label: 'Cenoura' },
+            { value: 'Ervilha', label: 'Ervilha' },
+            { value: 'Milho', label: 'Milho' },
+            { value: 'Alface', label: 'Alface' },
+            { value: 'Rúcula', label: 'Rúcula' },
+            { value: 'Espinafre', label: 'Espinafre' },
+            { value: 'Molho de tomate', label: 'Molho de tomate' },
+            { value: 'Molho branco', label: 'Molho branco' },
+            { value: 'Azeite', label: 'Azeite' },
+            { value: 'Manteiga', label: 'Manteiga' },
+            { value: 'Farinha', label: 'Farinha' },
+            { value: 'Macarrão', label: 'Macarrão' },
+            { value: 'Massa de pizza', label: 'Massa de pizza' },
+            { value: 'Chocolate', label: 'Chocolate' },
+            { value: 'Açúcar', label: 'Açúcar' },
+            { value: 'Sal', label: 'Sal' },
+            { value: 'Pimenta', label: 'Pimenta' },
+            { value: 'Orégano', label: 'Orégano' },
+            { value: 'Manjericão', label: 'Manjericão' },
+            { value: 'Salsa', label: 'Salsa' },
+            { value: 'Coentro', label: 'Coentro' },
           ]}
         />
       </Form.Item>
+
+      {/* Visualização independente dos ingredientes */}
+      <div style={{ marginBottom: 16 }}>
+        {ingredientesVisiveis.map((ing) => (
+          <Tag
+            key={ing}
+            closable
+            onClose={() => removerVisual(ing)}
+            style={{ marginBottom: 8 }}
+          >
+            {ing}
+          </Tag>
+        ))}
+      </div>
 
       <Button type="primary" htmlType="submit" block loading={loading}>
         {initialValues?.id ? 'Atualizar' : 'Cadastrar'}

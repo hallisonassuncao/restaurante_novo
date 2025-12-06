@@ -8,7 +8,7 @@ export default function ClienteForm({ dao, initialValues, onSaved }) {
 
   useEffect(() => {
     if (initialValues) {
-      form.setFieldsValue(initialValues); // <-- garante que todos os dados aparecem
+      form.setFieldsValue(initialValues); // garante que todos os dados aparecem
     }
   }, [initialValues, form]);
 
@@ -42,6 +42,13 @@ export default function ClienteForm({ dao, initialValues, onSaved }) {
             value: data.cep,
           }
         ]);
+        // Preenche automaticamente os campos de endereço
+        form.setFieldsValue({
+          logradouro: data.logradouro,
+          bairro: data.bairro,
+          cidade: data.localidade,
+          estado: data.uf,
+        });
       } else {
         setCepOptions([]);
       }
@@ -77,6 +84,23 @@ export default function ClienteForm({ dao, initialValues, onSaved }) {
           onSearch={fetchCep}
           options={cepOptions}
         />
+      </Form.Item>
+
+      {/* Campos de endereço preenchidos automaticamente */}
+      <Form.Item name="logradouro" label="Logradouro">
+        <Input />
+      </Form.Item>
+
+      <Form.Item name="bairro" label="Bairro">
+        <Input />
+      </Form.Item>
+
+      <Form.Item name="cidade" label="Cidade">
+        <Input />
+      </Form.Item>
+
+      <Form.Item name="estado" label="Estado">
+        <Input />
       </Form.Item>
 
       <Form.Item
