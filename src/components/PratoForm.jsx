@@ -5,16 +5,23 @@ export default function PratoForm({ dao, initialValues, onSaved }) {
   const [loading, setLoading] = useState(false);
   const [form] = Form.useForm();
 
-  // Estado auxiliar só para exibir/remover ingredientes visualmente
+  // Estado auxiliar para exibir/remover ingredientes visualmente
   const [ingredientesVisiveis, setIngredientesVisiveis] = useState([]);
+  const [ingredientesRemovidos, setIngredientesRemovidos] = useState([]);
 
   useEffect(() => {
     if (initialValues) {
-      form.setFieldsValue(initialValues);
-      setIngredientesVisiveis(initialValues.ingredientes || []);
+      const clone = {
+        ...initialValues,
+        ingredientes: [...(initialValues.ingredientes || [])],
+      };
+      form.setFieldsValue(clone);
+      setIngredientesVisiveis(clone.ingredientes);
+      setIngredientesRemovidos([]);
     } else {
       form.resetFields();
       setIngredientesVisiveis([]);
+      setIngredientesRemovidos([]);
     }
   }, [initialValues, form]);
 
@@ -25,20 +32,25 @@ export default function PratoForm({ dao, initialValues, onSaved }) {
         nome: values.nome.trim(),
         preco: Number(values.preco),
         categoria: values.categoria,
-        ingredientes: values.ingredientes || [],
+        ingredientes: values.ingredientes || [], // sempre os oficiais
+        removidos: ingredientesRemovidos,        // apenas controle do pedido
       };
 
-      const res = initialValues?.id
-        ? await dao.update(initialValues.id, payload)
-        : await dao.create(payload);
-
-      message.success('Prato salvo com sucesso');
-      onSaved?.(res);
-
-      if (!initialValues?.id) {
-        form.resetFields();
-        setIngredientesVisiveis([]);
+      let res;
+      if (initialValues?.id) {
+        // Atualiza prato existente
+        res = await dao.update(initialValues.id, payload);
+        message.success('Prato atualizado com sucesso');
+      } else {
+        // Cria novo prato
+        res = await dao.create(payload);
+        message.success('Prato cadastrado com sucesso');
       }
+
+      onSaved?.(res);
+      form.resetFields();
+      setIngredientesVisiveis([]);
+      setIngredientesRemovidos([]);
     } catch {
       message.error('Erro ao salvar prato');
     } finally {
@@ -46,13 +58,14 @@ export default function PratoForm({ dao, initialValues, onSaved }) {
     }
   };
 
-  // Remove apenas da visualização, não do cadastro principal
+  // Remove apenas da visualização e registra como removido
   const removerVisual = (ingrediente) => {
     setIngredientesVisiveis((prev) => prev.filter((i) => i !== ingrediente));
+    setIngredientesRemovidos((prev) => [...prev, ingrediente]);
   };
 
   return (
-    <Form form={form} layout="vertical" initialValues={initialValues} onFinish={onFinish}>
+    <Form form={form} layout="vertical" onFinish={onFinish}>
       <Form.Item name="nome" label="Nome do Prato" rules={[{ required: true }]}>
         <Input placeholder="Ex: Lasanha" />
       </Form.Item>
@@ -136,7 +149,7 @@ export default function PratoForm({ dao, initialValues, onSaved }) {
       </div>
 
       <Button type="primary" htmlType="submit" block loading={loading}>
-        {initialValues?.id ? 'Atualizar' : 'Cadastrar'}
+        {initialValues?.id ? 'Salvar alterações' : 'Cadastrar'}
       </Button>
     </Form>
   );
