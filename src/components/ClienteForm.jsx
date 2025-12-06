@@ -1,9 +1,11 @@
-import { Form, Input, Button, message } from 'antd';
+import { Form, Input, Button, message, Select } from 'antd';
 import { useState } from 'react';
 
 export default function ClienteForm({ dao, initialValues, onSaved }) {
   const [loading, setLoading] = useState(false);
   const [form] = Form.useForm();
+
+  const [cepOptions, setCepOptions] = useState([]);
 
   const onFinish = async (values) => {
     setLoading(true);
@@ -12,6 +14,7 @@ export default function ClienteForm({ dao, initialValues, onSaved }) {
       const res = initialValues?.id
         ? await dao.update(initialValues.id, payload)
         : await dao.create(payload);
+
       message.success('Cliente salvo com sucesso');
       onSaved?.(res);
       form.resetFields();
@@ -22,8 +25,36 @@ export default function ClienteForm({ dao, initialValues, onSaved }) {
     }
   };
 
+  // Buscar CEP conforme digita
+  const fetchCep = async (text) => {
+    if (!text || text.length < 5) return;
+
+    try {
+      const res = await fetch(`https://viacep.com.br/ws/${text}/json/`);
+      const data = await res.json();
+
+      if (data?.cep) {
+        setCepOptions([
+          {
+            label: `${data.cep} - ${data.logradouro || ''} ${data.bairro || ''}`,
+            value: data.cep,
+          }
+        ]);
+      } else {
+        setCepOptions([]);
+      }
+    } catch {
+      setCepOptions([]);
+    }
+  };
+
   return (
-    <Form form={form} layout="vertical" initialValues={initialValues} onFinish={onFinish}>
+    <Form
+      form={form}
+      layout="vertical"
+      initialValues={initialValues}
+      onFinish={onFinish}
+    >
       <Form.Item name="nome" label="Nome" rules={[{ required: true }]}>
         <Input />
       </Form.Item>
@@ -32,13 +63,36 @@ export default function ClienteForm({ dao, initialValues, onSaved }) {
         <Input />
       </Form.Item>
 
-      {/* Campo Endereço substituindo CPF */}
+      {/* CEP com listagem */}
       <Form.Item
-        name="endereco"
-        label="Endereço"
-        rules={[{ required: true, message: 'Informe o endereço' }]}
+        name="cep"
+        label="CEP"
+        rules={[{ required: true, message: 'Informe o CEP' }]}
       >
-        <Input placeholder="Rua, número, bairro, cidade..." />
+        <Select
+          showSearch
+          placeholder="Digite o CEP"
+          filterOption={false}
+          onSearch={fetchCep}
+          options={cepOptions}
+        />
+      </Form.Item>
+
+      {/* Número da casa / apartamento */}
+      <Form.Item
+        name="numero"
+        label="Número"
+        rules={[{ required: true, message: 'Informe o número' }]}
+      >
+        <Input placeholder="Ex: 123, Ap 45" />
+      </Form.Item>
+
+      {/* Complemento opcional */}
+      <Form.Item
+        name="complemento"
+        label="Complemento"
+      >
+        <Input placeholder="Bloco, andar, referência..." />
       </Form.Item>
 
       <Button type="primary" htmlType="submit" loading={loading}>
