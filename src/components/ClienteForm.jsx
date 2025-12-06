@@ -1,11 +1,16 @@
 import { Form, Input, Button, message, Select } from 'antd';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function ClienteForm({ dao, initialValues, onSaved }) {
   const [loading, setLoading] = useState(false);
   const [form] = Form.useForm();
-
   const [cepOptions, setCepOptions] = useState([]);
+
+  useEffect(() => {
+    if (initialValues) {
+      form.setFieldsValue(initialValues); // <-- garante que todos os dados aparecem
+    }
+  }, [initialValues, form]);
 
   const onFinish = async (values) => {
     setLoading(true);
@@ -25,14 +30,11 @@ export default function ClienteForm({ dao, initialValues, onSaved }) {
     }
   };
 
-  // Buscar CEP conforme digita
   const fetchCep = async (text) => {
     if (!text || text.length < 5) return;
-
     try {
       const res = await fetch(`https://viacep.com.br/ws/${text}/json/`);
       const data = await res.json();
-
       if (data?.cep) {
         setCepOptions([
           {
@@ -63,7 +65,6 @@ export default function ClienteForm({ dao, initialValues, onSaved }) {
         <Input />
       </Form.Item>
 
-      {/* CEP com listagem */}
       <Form.Item
         name="cep"
         label="CEP"
@@ -78,7 +79,6 @@ export default function ClienteForm({ dao, initialValues, onSaved }) {
         />
       </Form.Item>
 
-      {/* Número da casa / apartamento */}
       <Form.Item
         name="numero"
         label="Número"
@@ -87,11 +87,7 @@ export default function ClienteForm({ dao, initialValues, onSaved }) {
         <Input placeholder="Ex: 123, Ap 45" />
       </Form.Item>
 
-      {/* Complemento opcional */}
-      <Form.Item
-        name="complemento"
-        label="Complemento"
-      >
+      <Form.Item name="complemento" label="Complemento">
         <Input placeholder="Bloco, andar, referência..." />
       </Form.Item>
 
