@@ -1,13 +1,9 @@
-import { Form, Input, InputNumber, Select, Button, message, Row, Col, Tag } from 'antd';
+import { Form, Input, InputNumber, Select, Button, message, Row, Col } from 'antd';
 import { useState, useEffect } from 'react';
 
 export default function PratoForm({ dao, initialValues, onSaved }) {
   const [loading, setLoading] = useState(false);
   const [form] = Form.useForm();
-
-  // Estado auxiliar para exibir/remover ingredientes visualmente
-  const [ingredientesVisiveis, setIngredientesVisiveis] = useState([]);
-  const [ingredientesRemovidos, setIngredientesRemovidos] = useState([]);
 
   useEffect(() => {
     if (initialValues) {
@@ -16,12 +12,8 @@ export default function PratoForm({ dao, initialValues, onSaved }) {
         ingredientes: [...(initialValues.ingredientes || [])],
       };
       form.setFieldsValue(clone);
-      setIngredientesVisiveis(clone.ingredientes);
-      setIngredientesRemovidos([]);
     } else {
       form.resetFields();
-      setIngredientesVisiveis([]);
-      setIngredientesRemovidos([]);
     }
   }, [initialValues, form]);
 
@@ -32,36 +24,25 @@ export default function PratoForm({ dao, initialValues, onSaved }) {
         nome: values.nome.trim(),
         preco: Number(values.preco),
         categoria: values.categoria,
-        ingredientes: values.ingredientes || [], // sempre os oficiais
-        removidos: ingredientesRemovidos,        // apenas controle do pedido
+        ingredientes: values.ingredientes || [],
       };
 
       let res;
       if (initialValues?.id) {
-        // Atualiza prato existente
         res = await dao.update(initialValues.id, payload);
         message.success('Prato atualizado com sucesso');
       } else {
-        // Cria novo prato
         res = await dao.create(payload);
         message.success('Prato cadastrado com sucesso');
       }
 
       onSaved?.(res);
       form.resetFields();
-      setIngredientesVisiveis([]);
-      setIngredientesRemovidos([]);
     } catch {
       message.error('Erro ao salvar prato');
     } finally {
       setLoading(false);
     }
-  };
-
-  // Remove apenas da visualização e registra como removido
-  const removerVisual = (ingrediente) => {
-    setIngredientesVisiveis((prev) => prev.filter((i) => i !== ingrediente));
-    setIngredientesRemovidos((prev) => [...prev, ingrediente]);
   };
 
   return (
@@ -133,20 +114,6 @@ export default function PratoForm({ dao, initialValues, onSaved }) {
           ]}
         />
       </Form.Item>
-
-      {/* Visualização independente dos ingredientes */}
-      <div style={{ marginBottom: 16 }}>
-        {ingredientesVisiveis.map((ing) => (
-          <Tag
-            key={ing}
-            closable
-            onClose={() => removerVisual(ing)}
-            style={{ marginBottom: 8 }}
-          >
-            {ing}
-          </Tag>
-        ))}
-      </div>
 
       <Button type="primary" htmlType="submit" block loading={loading}>
         {initialValues?.id ? 'Salvar alterações' : 'Cadastrar'}
