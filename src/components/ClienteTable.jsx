@@ -4,22 +4,15 @@ export default function ClienteTable({ data, onEdit, onDelete }) {
   const columns = [
     { title: 'Nome', dataIndex: 'nome' },
     { title: 'Telefone', dataIndex: 'telefone' },
+    { title: 'CEP', dataIndex: 'cep' },
     {
       title: 'Endereço',
-      render: (_, record) => {
-        // Monta uma descrição completa do endereço incluindo CEP
-        const partes = [
-          record.logradouro,
-          record.numero,
-          record.complemento,
-          record.bloco,
-          record.andar,
-          record.referencia,
-          record.cep ? `CEP: ${record.cep}` : null
-        ].filter(Boolean); // remove valores nulos ou undefined
-
-        return partes.length > 0 ? partes.join(', ') : 'Não informado';
-      }
+      render: (_, record) => (
+        <div>
+          <div>{record.endereco || 'Não informado'}</div>
+          {record.numero && <div>Número: {record.numero}</div>}
+        </div>
+      )
     },
     {
       title: 'Ações',

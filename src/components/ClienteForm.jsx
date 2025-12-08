@@ -42,12 +42,10 @@ export default function ClienteForm({ dao, initialValues, onSaved }) {
             value: data.cep,
           }
         ]);
-        // Preenche automaticamente os campos de endereço
+        // Preenche automaticamente o campo de endereço
         form.setFieldsValue({
-          cidade: data.localidade,
-          estado: data.uf,
+          endereco: `${data.logradouro || ''}, ${data.bairro || ''}, ${data.localidade || ''} - ${data.uf || ''}`,
           numero: '',
-          complemento: '',
         });
       } else {
         setCepOptions([]);
@@ -86,11 +84,11 @@ export default function ClienteForm({ dao, initialValues, onSaved }) {
         />
       </Form.Item>
 
-      <Form.Item name="cidade" label="Cidade">
-        <Input />
-      </Form.Item>
-
-      <Form.Item name="estado" label="Estado">
+      <Form.Item
+        name="endereco"
+        label="Endereço"
+        rules={[{ required: true, message: 'Informe o endereço' }]}
+      >
         <Input />
       </Form.Item>
 
@@ -100,10 +98,6 @@ export default function ClienteForm({ dao, initialValues, onSaved }) {
         rules={[{ required: true, message: 'Informe o número' }]}
       >
         <Input placeholder="Ex: 123, Ap 45" />
-      </Form.Item>
-
-      <Form.Item name="complemento" label="Complemento">
-        <Input placeholder="Bloco, andar, referência..." />
       </Form.Item>
 
       <Button type="primary" htmlType="submit" loading={loading}>

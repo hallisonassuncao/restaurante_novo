@@ -1,17 +1,24 @@
 import { Form, Input, InputNumber, Select, Button, message, Row, Col } from 'antd';
 import { useState, useEffect } from 'react';
 
+// Lista padrão de ingredientes sugeridos
+const INGREDIENTES_PADRAO = [
+  "Arroz", "Feijão", "Batata", "Carne bovina", "Frango", "Peixe", "Porco",
+  "Ovos", "Queijo", "Presunto", "Tomate", "Cebola", "Alho", "Pimentão",
+  "Cenoura", "Ervilha", "Milho", "Alface", "Rúcula", "Espinafre",
+  "Molho de tomate", "Molho branco", "Azeite", "Manteiga", "Farinha",
+  "Macarrão", "Massa de pizza", "Chocolate", "Açúcar", "Sal", "Pimenta",
+  "Orégano", "Manjericão", "Salsa", "Coentro"
+];
+
 export default function PratoForm({ dao, initialValues, onSaved }) {
   const [loading, setLoading] = useState(false);
   const [form] = Form.useForm();
 
+  // Garante que o form atualize se o initialValues mudar
   useEffect(() => {
     if (initialValues) {
-      const clone = {
-        ...initialValues,
-        ingredientes: [...(initialValues.ingredientes || [])],
-      };
-      form.setFieldsValue(clone);
+      form.setFieldsValue(initialValues);
     } else {
       form.resetFields();
     }
@@ -26,18 +33,16 @@ export default function PratoForm({ dao, initialValues, onSaved }) {
         categoria: values.categoria,
         ingredientes: values.ingredientes || [],
       };
-
-      let res;
-      if (initialValues?.id) {
-        res = await dao.update(initialValues.id, payload);
-        message.success('Prato atualizado com sucesso');
-      } else {
-        res = await dao.create(payload);
-        message.success('Prato cadastrado com sucesso');
-      }
-
+      const res = initialValues?.id
+        ? await dao.update(initialValues.id, payload)
+        : await dao.create(payload);
+      
+      message.success('Prato salvo com sucesso');
       onSaved?.(res);
-      form.resetFields();
+      
+      if (!initialValues?.id) {
+        form.resetFields();
+      }
     } catch {
       message.error('Erro ao salvar prato');
     } finally {
@@ -46,11 +51,12 @@ export default function PratoForm({ dao, initialValues, onSaved }) {
   };
 
   return (
-    <Form form={form} layout="vertical" onFinish={onFinish}>
+    <Form form={form} layout="vertical" initialValues={initialValues} onFinish={onFinish}>
       <Form.Item name="nome" label="Nome do Prato" rules={[{ required: true }]}>
         <Input placeholder="Ex: Lasanha" />
       </Form.Item>
 
+      {/* Grid Responsivo para Preço e Categoria */}
       <Row gutter={16}>
         <Col xs={24} md={12}>
           <Form.Item name="preco" label="Preço" rules={[{ required: true }]}>
@@ -59,13 +65,11 @@ export default function PratoForm({ dao, initialValues, onSaved }) {
         </Col>
         <Col xs={24} md={12}>
           <Form.Item name="categoria" label="Categoria" rules={[{ required: true }]}>
-            <Select
-              options={[
-                { value: 'Entrada', label: 'Entrada' },
-                { value: 'Principal', label: 'Principal' },
-                { value: 'Sobremesa', label: 'Sobremesa' },
-              ]}
-            />
+            <Select options={[
+              { value: 'Entrada', label: 'Entrada' },
+              { value: 'Principal', label: 'Principal' },
+              { value: 'Sobremesa', label: 'Sobremesa' },
+            ]} />
           </Form.Item>
         </Col>
       </Row>
@@ -75,48 +79,12 @@ export default function PratoForm({ dao, initialValues, onSaved }) {
           mode="tags"
           tokenSeparators={[',']}
           placeholder="Digite ou selecione os ingredientes"
-          options={[
-            { value: 'Arroz', label: 'Arroz' },
-            { value: 'Feijão', label: 'Feijão' },
-            { value: 'Batata', label: 'Batata' },
-            { value: 'Carne bovina', label: 'Carne bovina' },
-            { value: 'Frango', label: 'Frango' },
-            { value: 'Peixe', label: 'Peixe' },
-            { value: 'Porco', label: 'Porco' },
-            { value: 'Ovos', label: 'Ovos' },
-            { value: 'Queijo', label: 'Queijo' },
-            { value: 'Presunto', label: 'Presunto' },
-            { value: 'Tomate', label: 'Tomate' },
-            { value: 'Cebola', label: 'Cebola' },
-            { value: 'Alho', label: 'Alho' },
-            { value: 'Pimentão', label: 'Pimentão' },
-            { value: 'Cenoura', label: 'Cenoura' },
-            { value: 'Ervilha', label: 'Ervilha' },
-            { value: 'Milho', label: 'Milho' },
-            { value: 'Alface', label: 'Alface' },
-            { value: 'Rúcula', label: 'Rúcula' },
-            { value: 'Espinafre', label: 'Espinafre' },
-            { value: 'Molho de tomate', label: 'Molho de tomate' },
-            { value: 'Molho branco', label: 'Molho branco' },
-            { value: 'Azeite', label: 'Azeite' },
-            { value: 'Manteiga', label: 'Manteiga' },
-            { value: 'Farinha', label: 'Farinha' },
-            { value: 'Macarrão', label: 'Macarrão' },
-            { value: 'Massa de pizza', label: 'Massa de pizza' },
-            { value: 'Chocolate', label: 'Chocolate' },
-            { value: 'Açúcar', label: 'Açúcar' },
-            { value: 'Sal', label: 'Sal' },
-            { value: 'Pimenta', label: 'Pimenta' },
-            { value: 'Orégano', label: 'Orégano' },
-            { value: 'Manjericão', label: 'Manjericão' },
-            { value: 'Salsa', label: 'Salsa' },
-            { value: 'Coentro', label: 'Coentro' },
-          ]}
+          options={INGREDIENTES_PADRAO.map(i => ({ value: i, label: i }))}
         />
       </Form.Item>
 
       <Button type="primary" htmlType="submit" block loading={loading}>
-        {initialValues?.id ? 'Salvar alterações' : 'Cadastrar'}
+        {initialValues?.id ? 'Atualizar' : 'Cadastrar'}
       </Button>
     </Form>
   );
