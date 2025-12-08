@@ -4,7 +4,23 @@ export default function ClienteTable({ data, onEdit, onDelete }) {
   const columns = [
     { title: 'Nome', dataIndex: 'nome' },
     { title: 'Telefone', dataIndex: 'telefone' },
-    { title: 'Endereço', dataIndex: 'endereco' }, // Corrigi de 'cpf' para 'endereco' conforme seu model
+    {
+      title: 'Endereço',
+      render: (_, record) => {
+        // Monta uma descrição completa do endereço incluindo CEP
+        const partes = [
+          record.logradouro,
+          record.numero,
+          record.complemento,
+          record.bloco,
+          record.andar,
+          record.referencia,
+          record.cep ? `CEP: ${record.cep}` : null
+        ].filter(Boolean); // remove valores nulos ou undefined
+
+        return partes.length > 0 ? partes.join(', ') : 'Não informado';
+      }
+    },
     {
       title: 'Ações',
       render: (_, record) => (
@@ -19,12 +35,12 @@ export default function ClienteTable({ data, onEdit, onDelete }) {
   ];
 
   return (
-    <Table 
-      rowKey="id" 
-      columns={columns} 
-      dataSource={data} 
-      pagination={{ pageSize: 5 }} 
-      scroll={{ x: 'max-content' }} // <--- Adicionado para responsividade
+    <Table
+      rowKey="id"
+      columns={columns}
+      dataSource={data}
+      pagination={{ pageSize: 5 }}
+      scroll={{ x: 'max-content' }}
     />
   );
 }
