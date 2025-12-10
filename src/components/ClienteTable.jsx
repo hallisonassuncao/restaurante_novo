@@ -4,7 +4,16 @@ export default function ClienteTable({ data, onEdit, onDelete }) {
   const columns = [
     { title: 'Nome', dataIndex: 'nome' },
     { title: 'Telefone', dataIndex: 'telefone' },
-    { title: 'Endereço', dataIndex: 'endereco' }, // Corrigi de 'cpf' para 'endereco' conforme seu model
+    { title: 'CEP', dataIndex: 'cep' },
+    {
+      title: 'Endereço',
+      render: (_, record) => (
+        <div>
+          <div>{record.endereco || 'Não informado'}</div>
+          {record.numero && <div>Número: {record.numero}</div>}
+        </div>
+      )
+    },
     {
       title: 'Ações',
       render: (_, record) => (
@@ -19,12 +28,12 @@ export default function ClienteTable({ data, onEdit, onDelete }) {
   ];
 
   return (
-    <Table 
-      rowKey="id" 
-      columns={columns} 
-      dataSource={data} 
-      pagination={{ pageSize: 5 }} 
-      scroll={{ x: 'max-content' }} // <--- Adicionado para responsividade
+    <Table
+      rowKey="id"
+      columns={columns}
+      dataSource={data}
+      pagination={{ pageSize: 5 }}
+      scroll={{ x: 'max-content' }}
     />
   );
 }

@@ -27,9 +27,9 @@ export default function PedidoTable({ data, clientesById, pratosById, onDelete }
           const prato = pratosById[i.pratoId];
           return (
             <div key={i.pratoId} style={{ marginBottom: 8 }}>
-              <strong>{prato?.nome || 'Prato removido'}</strong> x{i.quantidade}
+              <strong>{prato?.nome || 'Prato removido'}</strong> ×{i.quantidade}
               <div style={{ fontSize: '12px', fontStyle: 'italic', color: '#555' }}>
-                Ingredientes: {prato?.ingredientes?.join(', ') || '—'}
+                Ingredientes: {i.ingredientes?.join(', ') || '—'}
               </div>
             </div>
           );
@@ -54,13 +54,12 @@ export default function PedidoTable({ data, clientesById, pratosById, onDelete }
   ];
 
   return (
-    <Table 
-      rowKey="id" 
-      columns={columns} 
-      dataSource={data} 
+    <Table
+      rowKey="id"
+      columns={columns}
+      dataSource={data}
       pagination={{ pageSize: 5 }}
-      // ADICIONE ESTA LINHA:
-      scroll={{ x: 'max-content' }} 
+      scroll={{ x: 'max-content' }}
     />
   );
 }
