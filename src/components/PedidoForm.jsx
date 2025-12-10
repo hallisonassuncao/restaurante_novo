@@ -1,174 +1,149 @@
-import { Form, Select, InputNumber, Button, Card, Space, message, Row, Col } from 'antd';
-import { useState, useEffect } from 'react';
+import { Table, Button, Popconfirm, Tabs, Input } from "antd";
+import { useState, useEffect } from "react";
 
-export default function PedidoForm({ pedidoDAO, clienteDAO, pratoDAO, onSaved }) {
-  const [form] = Form.useForm();
-  const [clientes, setClientes] = useState([]);
-  const [pratos, setPratos] = useState([]);
-  const [itens, setItens] = useState([]);
+export default function PedidoTable({ data, clientesById, pratosById, onDelete }) {
+  const [ingredientesRemovidos, setIngredientesRemovidos] = useState([]);
+  const [novoIngrediente, setNovoIngrediente] = useState("");
 
+  // 🔥 Carrega os ingredientes removidos
   useEffect(() => {
-    (async () => {
-      setClientes(await clienteDAO.list());
-      setPratos(await pratoDAO.list());
-    })();
-  }, []);
+    const todosIngredientes = data.flatMap((pedido) =>
+      pedido.itens.flatMap((i) =>
+        Array.isArray(i.ingredientes) ? i.ingredientes : []
+      )
+    );
+    setIngredientesRemovidos(todosIngredientes);
+  }, [data]);
 
-  const addItem = () =>
-    setItens([...itens, { pratoId: null, quantidade: 1, precoUnitario: 0, ingredientesEditados: [], editando: true }]);
+  // ➕ Adicionar ingrediente manualmente
+  const adicionarIngrediente = () => {
+    if (novoIngrediente.trim() === "") return;
 
-  const updateItem = (idx, patch) => {
-    const next = [...itens];
-    const current = next[idx];
-    const updated = { ...current, ...patch };
-
-    // Atualiza ingredientes e preço se o prato foi alterado
-    if (patch.pratoId && patch.pratoId !== current.pratoId) {
-      const prato = pratos.find((p) => p.id === patch.pratoId);
-      updated.precoUnitario = prato?.preco || 0;
-      updated.ingredientesEditados = [...(prato?.ingredientes || [])];
-    }
-
-    next[idx] = updated;
-    setItens(next);
+    setIngredientesRemovidos([...ingredientesRemovidos, novoIngrediente.trim()]);
+    setNovoIngrediente("");
   };
 
-  const removeItem = (idx) => setItens(itens.filter((_, i) => i !== idx));
-
-  const total = itens.reduce((acc, i) => acc + i.quantidade * i.precoUnitario, 0);
-
-  const save = async (values) => {
-    const payload = {
-      clienteId: values.clienteId,
-      itens: itens.filter((i) => i.pratoId).map((i) => ({
-        pratoId: i.pratoId,
-        quantidade: i.quantidade,
-        precoUnitario: i.precoUnitario,
-        ingredientes: i.ingredientesEditados,
-      })),
-      data: new Date().toISOString(),
-      valorTotal: total,
-    };
-
-    if (payload.itens.length === 0)
-      return message.error('Adicione ao menos 1 item');
-
-    await pedidoDAO.create(payload);
-    message.success('Pedido registrado');
-
-    setItens([]);
-    form.resetFields();
-    onSaved?.();
+  // ❌ Remover ingrediente específico
+  const removerIngrediente = (index) => {
+    const novaLista = ingredientesRemovidos.filter((_, i) => i !== index);
+    setIngredientesRemovidos(novaLista);
   };
+
+  const columns = [
+    {
+      title: "Data",
+      dataIndex: "data",
+      render: (d) => new Date(d).toLocaleString("pt-BR"),
+    },
+    {
+      title: "Cliente",
+      dataIndex: "clienteId",
+      render: (id) => clientesById[id]?.nome || "—",
+    },
+    {
+      title: "Itens",
+      dataIndex: "itens",
+      render: (itens, pedido) =>
+        itens.map((i, idx) => {
+          const prato = pratosById[i.pratoId];
+          const nome = prato?.nome || "Prato removido";
+          const ingredientes = Array.isArray(i.ingredientes)
+            ? i.ingredientes.join(", ")
+            : "—";
+
+          return (
+            <div key={`${pedido.id}-${idx}`} style={{ marginBottom: 10 }}>
+              <strong>{nome}</strong> ×{i.quantidade}
+              <div style={{ fontSize: 12, color: "#555" }}>
+                Ingredientes removidos: {ingredientes}
+              </div>
+            </div>
+          );
+        }),
+    },
+    {
+      title: "Valor Total",
+      dataIndex: "valorTotal",
+      render: (v) => `R$ ${v.toFixed(2)}`,
+    },
+    {
+      title: "Ações",
+      render: (_, record) => (
+        <Popconfirm title="Excluir pedido?" onConfirm={() => onDelete(record.id)}>
+          <Button danger size="small">Excluir Pedido</Button>
+        </Popconfirm>
+      ),
+    },
+  ];
 
   return (
-    <Form form={form} layout="vertical" onFinish={save}>
-      <Form.Item
-        name="clienteId"
-        label="Cliente"
-        rules={[{ required: true }]}
-      >
-        <Select
-          placeholder="Selecione o cliente"
-          options={clientes.map((c) => ({ value: c.id, label: c.nome }))}
-        />
-      </Form.Item>
+    <Tabs
+      defaultActiveKey="1"
+      items={[
+        {
+          key: "1",
+          label: "Pedidos",
+          children: (
+            <Table
+              rowKey="id"
+              columns={columns}
+              dataSource={data}
+              pagination={{ pageSize: 5 }}
+              scroll={{ x: "max-content" }}
+            />
+          ),
+        },
+        {
+          key: "2",
+          label: "Ingredientes Removidos",
+          children: (
+            <div>
+              <h3>Ingredientes Removidos</h3>
 
-      <Space direction="vertical" style={{ width: '100%' }}>
-        {itens.map((item, idx) => {
-          const pratoSelecionado = pratos.find((p) => p.id === item.pratoId);
-          return (
-            <Card
-              key={idx}
-              size="small"
-              title={`Item ${idx + 1}`}
-              extra={
-                <Button danger size="small" onClick={() => removeItem(idx)}>
-                  Remover
+              {/* Campo de adicionar ingrediente */}
+              <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
+                <Input
+                  placeholder="Adicionar ingrediente..."
+                  value={novoIngrediente}
+                  onChange={(e) => setNovoIngrediente(e.target.value)}
+                />
+                <Button type="primary" onClick={adicionarIngrediente}>
+                  Adicionar
                 </Button>
-              }
-            >
-              {!item.editando ? (
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <strong>{pratoSelecionado?.nome || 'Sem prato'}</strong>
-                    <br />
-                    Qtd: {item.quantidade}
-                    <br />
-                    Ingredientes: {item.ingredientesEditados.join(', ')}
-                  </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <strong>R$ {item.precoUnitario.toFixed(2)}</strong>
-                    <br />
-                    <Button size="small" onClick={() => updateItem(idx, { editando: true })}>
-                      Editar item
-                    </Button>
-                  </div>
-                </div>
+              </div>
+
+              {ingredientesRemovidos.length === 0 ? (
+                <p>Nenhum ingrediente removido.</p>
               ) : (
-                <Row gutter={[16, 16]} align="middle">
-                  <Col xs={24} md={11}>
-                    <Select
-                      style={{ width: '100%' }}
-                      placeholder="Selecione o prato"
-                      value={item.pratoId}
-                      onChange={(val) => updateItem(idx, { pratoId: val })}
-                      options={pratos.map((p) => ({
-                        value: p.id,
-                        label: `${p.nome} (R$ ${p.preco})`,
-                      }))}
-                    />
-                  </Col>
+                <ul>
+                  {ingredientesRemovidos.map((ing, idx) => (
+                    <li
+                      key={idx}
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        marginBottom: 6,
+                      }}
+                    >
+                      {ing}
 
-                  <Col xs={12} md={5}>
-                    <InputNumber
-                      min={1}
-                      style={{ width: '100%' }}
-                      placeholder="Qtd"
-                      value={item.quantidade}
-                      onChange={(q) => updateItem(idx, { quantidade: q })}
-                    />
-                  </Col>
-
-                  <Col xs={12} md={8} style={{ textAlign: 'right' }}>
-                    <strong>R$ {item.precoUnitario.toFixed(2)}</strong>
-                  </Col>
-
-                  {pratoSelecionado && (
-                    <Col span={24}>
-                      <Select
-                        mode="tags"
-                        style={{ width: '100%', marginTop: 4 }}
-                        value={item.ingredientesEditados}
-                        onChange={(vals) => updateItem(idx, { ingredientesEditados: vals })}
-                        options={pratoSelecionado.ingredientes.map((ing) => ({
-                          value: ing,
-                          label: ing,
-                        }))}
-                      />
-                    </Col>
-                  )}
-
-                  <Col span={24} style={{ textAlign: 'right' }}>
-                    <Button size="small" type="primary" onClick={() => updateItem(idx, { editando: false })}>
-                      Concluir edição
-                    </Button>
-                  </Col>
-                </Row>
+                      <Button
+                        danger
+                        size="small"
+                        onClick={() => removerIngrediente(idx)}
+                      >
+                        Remover
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
               )}
-            </Card>
-          );
-        })}
-
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Button onClick={addItem}>+ Adicionar item</Button>
-          <h3 style={{ margin: 0 }}>Total: R$ {total.toFixed(2)}</h3>
-        </div>
-      </Space>
-
-      <Button type="primary" htmlType="submit" block style={{ marginTop: 24 }}>
-        Salvar Pedido
-      </Button>
-    </Form>
+            </div>
+          ),
+        },
+      ]}
+    />
   );
 }
+
